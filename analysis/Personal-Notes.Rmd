@@ -1,0 +1,13 @@
+---
+title: "Personal-Notes"
+author: "Schyuler Lujan"
+date: "3/24/2020"
+output: html_document
+---
+
+**Changes to Variables Across Survey Years**
+
+2008: `LOCALE` added
+2010: `AUDIO_DL` and `VIDEO_DL` added; rename `AUDIO` and `VIDEO` variables from the 2007-2009 surveys to `AUDIO_PH` and `VIDEO_PH`
+2013: `ELMATCIR` added
+2014: `WIFISESS` added

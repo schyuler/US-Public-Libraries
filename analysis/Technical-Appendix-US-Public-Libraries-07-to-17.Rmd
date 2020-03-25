@@ -1,0 +1,413 @@
+---
+title: "Technical Appendix - US Public Library Survey"
+author: "Schyuler Lujan"
+date: "3/24/2020"
+output: html_document
+---
+
+# Project Overview
+
+## Project Description
+
+**Expectations**
+I expect the following:
+- Libraries in rural areas will have larger electronic collections
+- Electronic collections to increase over the 10-year period
+- Libraries in rural areas will have lower physical circulation but higher electronic circulation
+
+## Description of Data
+
+Data Source: https://www.imls.gov/research-evaluation/data-collection/public-libraries-survey
+
+# Data Tidying
+
+## Load Libraries
+
+```{r message = FALSE, warning = FALSE}
+# Load relevant libraries
+library(tidyverse)
+library(stringr)
+library(janitor)
+
+# Set working directory
+#setwd('/Users/Tiny Moo Cow/OneDrive - Seattle University/OMSBA/Other Projects/US-Public-Libraries')
+```
+
+## Load Data
+```{r message = FALSE, warning = FALSE}
+# Load all datasets from 2007 thru 2017
+PLS2007 <- read.csv("./pls-data/PLS_2007.csv")
+PLS2008 <- read.csv("./pls-data/PLS_2008.csv")
+PLS2009 <- read.csv("./pls-data/PLS_2009.csv")
+PLS2010 <- read.csv("./pls-data/PLS_2010.csv")
+PLS2011 <- read.csv("./pls-data/PLS_2011.csv")
+PLS2012 <- read.csv("./pls-data/PLS_2012.csv")
+PLS2013 <- read.csv("./pls-data/PLS_2013.csv")
+PLS2014 <- read.csv("./pls-data/PLS_2014.csv")
+PLS2015 <- read.csv("./pls-data/PLS_2015.csv")
+PLS2016 <- read.csv("./pls-data/PLS_2016.csv")
+PLS2017 <- read.csv("./pls-data/PLS_2017.csv")
+# Add SRVY_YEAR variable to each dataset to track year of survey
+PLS2007 <- mutate(PLS2007, SRVY_YEAR = 2007)
+PLS2008 <- mutate(PLS2008, SRVY_YEAR = 2008)
+PLS2009 <- mutate(PLS2009, SRVY_YEAR = 2009)
+PLS2010 <- mutate(PLS2010, SRVY_YEAR = 2010)
+PLS2011 <- mutate(PLS2011, SRVY_YEAR = 2011)
+PLS2012 <- mutate(PLS2012, SRVY_YEAR = 2012)
+PLS2013 <- mutate(PLS2013, SRVY_YEAR = 2013)
+PLS2014 <- mutate(PLS2014, SRVY_YEAR = 2014)
+PLS2015 <- mutate(PLS2015, SRVY_YEAR = 2015)
+PLS2016 <- mutate(PLS2016, SRVY_YEAR = 2016)
+PLS2017 <- mutate(PLS2017, SRVY_YEAR = 2017)
+# Remove variables beginning with "F_" from all dataframes
+PLS2007 <- select(PLS2007, -starts_with("F_"))
+PLS2008 <- select(PLS2008, -starts_with("F_"))
+PLS2009 <- select(PLS2009, -starts_with("F_"))
+PLS2010 <- select(PLS2010, -starts_with("F_"))
+PLS2011 <- select(PLS2011, -starts_with("F_"))
+PLS2012 <- select(PLS2012, -starts_with("F_"))
+PLS2013 <- select(PLS2013, -starts_with("F_"))
+PLS2014 <- select(PLS2014, -starts_with("F_"))
+PLS2015 <- select(PLS2015, -starts_with("F_"))
+PLS2016 <- select(PLS2016, -starts_with("F_"))
+PLS2017 <- select(PLS2017, -starts_with("F_"))
+```
+
+## Data Merging
+```{r}
+# Vertical merge of PLS2007 and PLS2008------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS2007, PLS2008, return = c("mismatch"), bind_method = c("rbind"))
+# Add new cols and change col type in PLS2007
+PLS2007 <- mutate(PLS2007,
+                  CNTYPOP = as.integer(NA),
+                  LOCALE = as.factor(NA),
+                  PHONE = as.factor(PHONE))
+# Vertical merge
+PLS <- rbind(PLS2007, PLS2008)
+# Vertical merge of PLS and PLS2009----------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS, PLS2009, return = c("mismatch"), bind_method = c("rbind"))
+# Remove discontinued cols and add new colsfrom PLS
+PLS <- select(PLS, -CNTYFIPS, -PUB_FIPS) 
+PLS <- mutate(PLS,
+              YAATTEN = as.integer(NA),
+              YAPRO = as.integer(NA)
+              )
+# Vertical merge
+PLS <- rbind(PLS, PLS2009)
+# Vertical merge of PLS and PLS2010----------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS, PLS2010, return = c("mismatch"), bind_method = c("rbind"))
+# Rename AUDIO and VIDEO variables in PLS; add new cols; remove discontinued cols
+PLS <- rename(PLS,
+              AUDIO_PH = AUDIO,
+              VIDEO_PH = VIDEO
+              )
+PLS <- mutate(PLS,
+              AUDIO_DL = as.integer(NA),
+              VIDEO_DL = as.integer(NA),
+              )
+PLS <- select(PLS, -ESUBSCRP)
+# Vertical merge
+PLS <- rbind(PLS, PLS2010)
+# Vertical merge of PLS and PLS2011----------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS, PLS2011, return = c("mismatch"), bind_method = c("rbind"))
+# Add new cols to PLS
+PLS <- mutate(PLS,
+              CBSA = as.integer(NA),
+              MAT_TYPE = as.integer(NA),
+              MICROF = as.factor(NA)
+              )
+# Change col type in PLS2011
+PLS2011 <- mutate(PLS2011, PHONE = as.factor(PHONE))
+# Vertical merge
+PLS <- rbind(PLS, PLS2011)
+# Vertical merge of PLS and PLS2012----------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS, PLS2012, return = c("mismatch"), bind_method = c("rbind"))
+# Remove discontinued cols
+PLS <- select(PLS, -DB_LOC, -DB_OTH, -MAT_CENT, -MAT_TYPE, -WEB_ADDR)
+# Change formats of PLS2012 cols
+PLS2012 <- mutate(PLS2012, 
+                  CDCODE = as.factor(NA),
+                  LOCALE = as.factor(NA))
+# Add new cols to PLS
+PLS <- mutate(PLS,
+              DB_LO_OT = as.integer(NA),
+              GAL = as.factor(NA),
+              GALMS = as.factor(NA),
+              POSTMS = as.factor(NA))
+# Vertical merge
+PLS <- rbind(PLS, PLS2012)
+# Vertical merge of PLS and PLS2013----------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS, PLS2013, return = c("mismatch"), bind_method = c("rbind"))
+# Change col types in PLS2013
+PLS2013 <- mutate(PLS2013,
+                  CDCODE = as.factor(NA),
+                  LOCALE = as.factor(NA),
+                  MICROF = as.factor(NA),
+                  )
+# Add new col to PLS
+PLS <- mutate(PLS,
+              ELMATCIR = as.integer(NA))
+# Vertical merge
+PLS <- rbind(PLS, PLS2013)
+# Vertical merge of PLS and PLS2014----------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS, PLS2014, return = c("mismatch"), bind_method = c("rbind"))
+# Convert col types in PLS2014
+PLS2014 <- mutate(PLS2014,
+                  AUDIO_DL = as.integer(AUDIO_DL),
+                  PHONE = as.factor(PHONE),
+                  VIDEO_DL = as.integer(VIDEO_DL))
+# Add new col to PLS
+PLS <- mutate(PLS, WIFISESS = as.integer(NA))
+# Vertical merge
+PLS <- rbind(PLS, PLS2014)
+# Vertical merge of PLS and PLS2015----------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS, PLS2015, return = c("mismatch"), bind_method = c("rbind"))
+# Remove discontinued cols in PLS
+PLS <- select(PLS, -DATABASE, -DB_LO_OT, -DB_ST, -FIPSCO, -FIPSPLAC, -FIPSST, -GAL, -GALMS, -POSTMS)
+# Add new cols
+PLS <- mutate(PLS,
+              ADDRTYPE = as.factor(NA),
+              EC_LO_OT = as.integer(NA),
+              EC_ST = as.integer(NA),
+              ELECCOLL = as.integer(NA),
+              GNISPLAC = as.factor(NA),
+              INCITSCO = as.integer(NA),
+              INCITSST = as.integer(NA),
+              MSTATUS = as.factor(NA),
+              SCORE = as.numeric(NA),
+              )
+# Change col types for PLS2015
+PLS2015 <- mutate(PLS2015,
+                  CDCODE = as.factor(CDCODE),
+                  LOCALE = as.factor(LOCALE),
+                  PHONE = as.factor(PHONE))
+# Vertical merge
+PLS <- rbind(PLS, PLS2015)
+# Vertical merge of PLS and PLS2016----------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS, PLS2016, return = c("mismatch"), bind_method = c("rbind"))
+# Add new cols to PLS
+PLS <- mutate(PLS,
+              ELCONT = as.integer(NA),
+              ELINFO = as.integer(NA),
+              LOCALE_MOD = as.factor(NA),
+              PHYSCIR = as.integer(NA),
+              REAPLOCALE = as.integer(NA),
+              REAPLOCALE_MOD = as.integer(NA),
+              TOTCOLL = as.integer(NA)
+              )
+# Change col type for PLS2016
+PLS2016 <- mutate(PLS2016,
+                  CDCODE = as.factor(CDCODE),
+                  PHONE = as.factor(PHONE))
+# Vertical merge
+PLS <- rbind(PLS, PLS2016)
+# Vertical merge of PLS and PLS2017----------------------------------------------------------------------------
+# Identify variable differences between dfs
+compare_df_cols(PLS, PLS2017, return = c("mismatch"), bind_method = c("rbind"))
+# Remove discontinued cols
+PLS <- select(PLS, -ADDRTYPE, -LOCALE, -MSTATUS, -REAPLOCALE, -SCORE)
+# Add new cols to PLS
+PLS <- mutate(PLS,
+              GEOMATCH = as.factor(NA),
+              LOCALE_ADD = as.integer(NA),
+              REAPLOCALE_ADD = as.integer(NA))
+# Change type on cols for PLS2017
+PLS2017 <- mutate(PLS2017,
+                  CDCODE = as.factor(CDCODE),
+                  LOCALE_MOD = as.factor(LOCALE_MOD),
+                  PHONE = as.factor(PHONE))
+# Vertical merge
+PLS <- rbind(PLS, PLS2017)
+```
+
+## Data Tidying
+```{r}
+# Create Unique Identifier
+PLS <- mutate(PLS, ID = as.character(paste(FSCSKEY, SRVY_YEAR, sep = "-")))
+# Check for duplicate values
+sum(duplicated(PLS$ID))
+```
+
+
+
+## Variable Categories
+
+After reviewing the 2007 and 2017 documentation and the criteria used by the Library Journal rating system, I have determined that the following variable categories will be assessed for this analysis and eventual dashboard development:
+
+- Service outlets
+- Operating revenue
+- Collection expenditures
+- Library collection
+- Library services
+- Circulation of materials
+- Library programs
+- Electronic technology
+
+We are most interested in assessing how different library characteristics (ie: geographic location, population, urban status), library collection, available resources to patrons, and sources of operating revenue affect library usage. We are also interested in any trends over the 10-year period 2007 to 2017. 
+
+### Identification
+
+- `FSCSKEY`: Library identification code (unique)
+- `LIBNAME`: Library name (for administrative entity)
+
+### Location Characteristics
+
+- `POPU LSA`: Population of the legal service area
+- `C_LEGBAS`: Legal basis code (ie: city/county, municipal govt, etc.)
+- `LOCALE`: Urban-centric locale code*
+
+*`LOCALE` variable added to the 2008 survey
+
+### Geography
+
+- `STABR`: State code, two-letter
+- `CITY`: City or town (for administrative entity)
+- `ZIP`: Five-digit zip code
+- `CNTY`: County
+- `OBEREG`: Region
+- `LONGITUD`: Longitude of location
+- `LATITUDE`: Latitude of location
+
+### Service Outlets
+
+- `CENTLIB`: Number of central libraries
+- `BRANLIB`: Number of branch libraries
+- `BKMOB`: Number of bookmobiles
+- `LIBRARIA`: Number of FTE employees with title of librarian
+
+### Operating Revenue
+
+- `LOCGVT`: Operating revenue from local government
+- `STGVT`: Operating revenue from state government
+- `FEDGVT`: Operating revenue from federal government
+- `OTHINCM`: Other operating revenue
+
+### Collection Expenditures
+
+- `PRMATEXP`: Operating expenditures for print materials
+- `ELMATEXP`: Operating expenditures for electronic materials
+- `OTHMATEX`: Operating expenditures for all other library materials
+- `TOTEXPCO`: Total expenditures on library collection
+
+### Library Collection
+
+- `BKVOL`: Print materials
+- `EBOOK`: Electronic books
+- `AUDIO`: Audio materials (physical)*
+- `VIDEO`: Video materials (physical)*
+- `AUDIO_DL`: Downloadable audio units**
+- `VIDEO_DL`: Downloadable video units**
+- `DATABASE`: Total Licensed Databases
+
+*For years 2010 to 2017, the `AUDIO` and `VIDEO` variables were split between physical and downloadable units. After merging these variables for the years 2007 to 2009, I will rename them to `AUDIO_PH` and `VIDEO_PH` for merging with later years.
+
+**`AUDIO_DL` and `VIDEO_DL`were introduced in the 2010 survey.
+
+### Library Services
+
+- `VISITS`: Total annual library visits
+- `REGBOR`: Registered borrowers
+
+### Circulation
+
+- `TOTCIR`: Total annual circulation transactions
+- `KIDCIRCL`: Total annual circulation of all children's materials
+- `ELMATCIR`: Eletronic material circulation*
+
+*`ELMATCIR`Added to the 2013 survey
+
+### Inter-Library Loans
+- `LOANTO`: Total annual loans provided to other libraries
+- `LOANFM`: Total annual loans received from other libraries
+
+### Library Programs
+- `TOTPRO`: Total library programs
+- `KIDPRO`: Total children's programs
+- `TOTATTEN`: Total audience at all library programs
+- `KIDATTEN`: Total audience at all children's programs
+
+### Electronic Technology
+- `GPTERMS`: Internet terminals used by general public
+- `PITUSR`: Users of public internet computers per year
+- `WIFISESS`: Total annual wireless sessions provided by the library*
+
+*`WIFISESS` added for the 2014 survey.
+
+## Select Variables
+```{r}
+# Select above variables from PLS2007; use as base for merging
+# PLS2007 <- select(PLS2007, FSCSKEY, SRVY_YEAR, LIBNAME, POPU_LSA, C_LEGBAS, STABR, CITY, ZIP, CNTY, OBEREG, LONGITUD, LATITUDE, CENTLIB, BRANLIB, BKMOB, LIBRARIA, LOCGVT, STGVT, FEDGVT, OTHINCM, PRMATEXP, ELMATEXP, OTHMATEX, TOTEXPCO, BKVOL, EBOOK, AUDIO, VIDEO, DATABASE, VISITS, REGBOR, TOTCIR, KIDCIRCL, LOANTO, LOANFM, TOTPRO, KIDPRO, TOTATTEN, KIDATTEN, GPTERMS, PITUSR)
+```
+
+## Data Structure
+```{r}
+# Examine data structure of PLS2007
+# str(PLS2007)
+```
+
+Tidying Notes for AFTER all dataframes are merged:
+- Use proper case on library name (for interactive dashboard searching)
+- Replace integer values for `OBEREG` with string values using following key:
+  - 1: New England
+  - 2: Mid East
+  - 3: Great Lakes
+  - 4: Plains
+  - 5: Southeast
+  - 6: Southwest
+  - 7: Rocky Mountains
+  - 8: Outlying Areas
+- Add variable for total locations: `CENTLIB` + `BRANLIB` + `BKMOB`
+- Add variables showing the proportion of each operating revenue type
+- Add variables showing the proportion of each collection expenditure type
+- Add proportion of `KIDATTEN`
+
+## Data Tidying
+```{r}
+# Check for duplicates on FSCSKEY
+
+# Replace OBEREG number codes with characters
+# PLS2007 <- mutate(PLS2007, OBEREG = ifelse(1, "New England",
+#                                            ifelse(2, "Mid East",
+#                                                   ifelse(3, "Great Lakes",
+#                                                          ifelse(4, "Plains",
+#                                                                 ifelse(5, "Southeast",
+#                                                                        ifelse(6, "Southwest",
+#                                                                               ifelse(7,"Rocky Mountains",
+#                                                                                      ifelse(8, "Far West", "Outlying Areas")
+#                                                                                      )
+#                                                                               )
+#                                                                        )
+#                                                                 )
+#                                                          )
+#                                                   )
+#                                            )
+#                   )
+```
+
+
+## First 10 Rows
+
+# Univariate Non-Graphical Analysis
+
+# Univariate Graphical Analysis
+
+# Multivariate Non-Graphical Analysis
+
+# Multivariate Graphical Analysis
+
+# Detailed EDA
+
+# Statistical Tests
+
+# Regression Analysis
+
+# Findings
