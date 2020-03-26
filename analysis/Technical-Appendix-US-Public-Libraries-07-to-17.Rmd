@@ -257,6 +257,15 @@ We are most interested in assessing how different library characteristics (ie: g
 
 - `POPU LSA`: Population of the legal service area
 - `C_LEGBAS`: Legal basis code (ie: city/county, municipal govt, etc.)
+  - CC: City/County
+  - CI: Municipal Government
+  - CO: County/Parish
+  - LD: Library District
+  - MJ: Multi-jurisdictional
+  - NL: Native American Tribal Government
+  - NP: Non-Profit Association or Agency
+  - SD: School District
+  - OT: Other
 - `LOCALE_MOD`: Urban-centric locale code based on the modal locale of central and branch libraries
   - 11: City, Large
   - 12: City, Mid-Size
@@ -414,19 +423,36 @@ PLS <- mutate(PLS, LOCALE_MOD = as.factor(ifelse(11, "City, Large",
                                           )
               )
 # Replace C_LEGBAS number codes with legal basis names
+# PLS <- mutate(PLS, C_LEGBAS = as.factor(ifelse(1, "City/County",
+#                                                ifelse(2, "Municipal Government",
+#                                                       ifelse(3, "County/Parish",
+#                                                              ifelse(4, "Library District",
+#                                                                     ifelse(5, "Multi-Jurisdictional",
+#                                                                            ifelse(6, "Native American Tribal Government",
+#                                                                                   ifelse(7, "Non-Profit Association or Agency",
+#                                                                                          ifelse(8, "School District", "Other")
+#                                                                                          )
+#                                                                                   )
+#                                                                            )
+#                                                                     )
+#                                                              )
+#                                                       )
+#                                                )
+#                                         )
+#               )
 
 ```
 
 Select Variables:
 ```{r}
-# Select variables to focus on for final analysis
-
+# Select variables for final analysis
+PLS_TOT <- select(PLS, ID, SRVY_YEAR, FSCSKEY, LIBNAME, CITY, STABR, ZIP, CNTY, OBEREG, C_LEGBAS, LOCALE_MOD, CENTLIB, BRANLIB, BKMOB, LIBRARIA, LOCGVT, STGVT, FEDGVT, OTHINCM, STAFFEXP, PRMATEXP, ELMATEXP, OTHMATEX, TOTEXPCO, OTHOPEXP, TOTOPEXP, BKVOL, EBOOK, AUDIO_PH, AUDIO_DL, VIDEO_PH, VIDEO_DL, ELECCOLL, VISITS, REGBOR, TOTCIR, KIDCIRCL, ELMATCIR, PHYSCIR, LOANTO, LOANFM, TOTPRO, KIDPRO, YAPRO, TOTATTEN, KIDATTEN, YAATTEN, GPTERMS, PITUSR, WIFISESS, LONGITUD, LATITUDE)
 ```
 
 Examine Data Structure:
 ```{r}
 # Examine data structure of PLS
-# str(PLS)
+str(PLS_TOT)
 ```
 
 Additional tidying notes:
@@ -436,6 +462,7 @@ Additional tidying notes:
 - Add variables showing the proportion of each operating revenue type
 - Add variables showing the proportion of each collection expenditure type
 - Add proportion of `KIDATTEN`
+- Create revenue and/or expenditure categories for easier groupings
 
 ## First 10 Rows
 
