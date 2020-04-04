@@ -27,12 +27,19 @@ Data Source: https://www.imls.gov/research-evaluation/data-collection/public-lib
 
 ## Load Libraries
 
+```{r echo = FALSE, warning = FALSE}
+# Clear environment of variables and functions
+rm(list = ls(all = TRUE)) 
+# Clear environment of packages
+if(is.null(sessionInfo()$otherPkgs) == FALSE)lapply(paste("package:", names(sessionInfo()$otherPkgs), sep=""), detach, character.only = TRUE, unload = TRUE)
+```
+
 ```{r message = FALSE, warning = FALSE}
 # Load relevant libraries
 library(tidyverse)
 library(stringr)
 library(janitor)
-
+#library(reshape)
 # Set working directory
 #setwd('/Users/Tiny Moo Cow/OneDrive - Seattle University/OMSBA/Other Projects/US-Public-Libraries')
 ```
@@ -40,7 +47,7 @@ library(janitor)
 ## Load Data
 ```{r message = FALSE, warning = FALSE}
 # Load all datasets from 2007 thru 2017
-PLS2007 <- read.csv("./pls-data/PLS_2007.csv")
+#PLS2007 <- read.csv("./pls-data/PLS_2007.csv")
 PLS2008 <- read.csv("./pls-data/PLS_2008.csv")
 PLS2009 <- read.csv("./pls-data/PLS_2009.csv")
 PLS2010 <- read.csv("./pls-data/PLS_2010.csv")
@@ -52,7 +59,7 @@ PLS2015 <- read.csv("./pls-data/PLS_2015.csv")
 PLS2016 <- read.csv("./pls-data/PLS_2016.csv")
 PLS2017 <- read.csv("./pls-data/PLS_2017.csv")
 # Add SRVY_YEAR variable to each dataset to track year of survey
-PLS2007 <- mutate(PLS2007, SRVY_YEAR = 2007)
+#PLS2007 <- mutate(PLS2007, SRVY_YEAR = 2007)
 PLS2008 <- mutate(PLS2008, SRVY_YEAR = 2008)
 PLS2009 <- mutate(PLS2009, SRVY_YEAR = 2009)
 PLS2010 <- mutate(PLS2010, SRVY_YEAR = 2010)
@@ -64,7 +71,7 @@ PLS2015 <- mutate(PLS2015, SRVY_YEAR = 2015)
 PLS2016 <- mutate(PLS2016, SRVY_YEAR = 2016)
 PLS2017 <- mutate(PLS2017, SRVY_YEAR = 2017)
 # Remove variables beginning with "F_" from all dataframes
-PLS2007 <- select(PLS2007, -starts_with("F_"))
+#PLS2007 <- select(PLS2007, -starts_with("F_"))
 PLS2008 <- select(PLS2008, -starts_with("F_"))
 PLS2009 <- select(PLS2009, -starts_with("F_"))
 PLS2010 <- select(PLS2010, -starts_with("F_"))
@@ -78,43 +85,42 @@ PLS2017 <- select(PLS2017, -starts_with("F_"))
 ```
 
 ## Data Merging
+
 ```{r}
-# Vertical merge of PLS2007 and PLS2008------------------------------------------------------------------------
+# Vertical merge of PLS2008 and PLS2009------------------------------------------------------------------------
 # Identify variable differences between dfs
-compare_df_cols(PLS2007, PLS2008, return = c("mismatch"), bind_method = c("rbind"))
-# Add new cols and change col type in PLS2007
-PLS2007 <- mutate(PLS2007,
-                  CNTYPOP = as.integer(NA),
-                  LOCALE = as.factor(NA),
-                  PHONE = as.factor(PHONE))
+compare_df_cols(PLS2008, PLS2009, return = c("mismatch"), bind_method = c("rbind"))
+# Remove discontinuted cols from PLS2008
+PLS2008 <- select(PLS2008, -CNTYFIPS, -PUB_FIPS)
+# Add new cols and change col type in PLS2008
+PLS2008 <- mutate(PLS2008,
+                  YAATTEN = as.integer(NA),
+                  YAPRO = as.integer(NA)
+                  )
 # Vertical merge
-PLS <- rbind(PLS2007, PLS2008)
-# Vertical merge of PLS and PLS2009----------------------------------------------------------------------------
-# Identify variable differences between dfs
-compare_df_cols(PLS, PLS2009, return = c("mismatch"), bind_method = c("rbind"))
-# Remove discontinued cols and add new colsfrom PLS
-PLS <- select(PLS, -CNTYFIPS, -PUB_FIPS) 
-PLS <- mutate(PLS,
-              YAATTEN = as.integer(NA),
-              YAPRO = as.integer(NA)
-              )
-# Vertical merge
-PLS <- rbind(PLS, PLS2009)
+PLS <- rbind(PLS2008, PLS2009)
+```
+
+```{r}
 # Vertical merge of PLS and PLS2010----------------------------------------------------------------------------
 # Identify variable differences between dfs
 compare_df_cols(PLS, PLS2010, return = c("mismatch"), bind_method = c("rbind"))
-# Rename AUDIO and VIDEO variables in PLS; add new cols; remove discontinued cols
-PLS <- rename(PLS,
-              AUDIO_PH = AUDIO,
-              VIDEO_PH = VIDEO
-              )
+# Rename AUDIO and VIDEO variables in PLS - per the user guide definitions, the variables AUDIO and VIDEO as defined from 2007 - 2009 are the same as the variables AUDIO_PH and VIDEO_PH introduced in 2010
+PLS <- rename(PLS, 
+              AUDIO_PH = AUDIO, 
+              VIDEO_PH = VIDEO)
+# Add new variables
 PLS <- mutate(PLS,
               AUDIO_DL = as.integer(NA),
               VIDEO_DL = as.integer(NA),
               )
+# Remove variables discontinued as of 2010
 PLS <- select(PLS, -ESUBSCRP)
 # Vertical merge
 PLS <- rbind(PLS, PLS2010)
+```
+
+```{r}
 # Vertical merge of PLS and PLS2011----------------------------------------------------------------------------
 # Identify variable differences between dfs
 compare_df_cols(PLS, PLS2011, return = c("mismatch"), bind_method = c("rbind"))
@@ -128,6 +134,9 @@ PLS <- mutate(PLS,
 PLS2011 <- mutate(PLS2011, PHONE = as.factor(PHONE))
 # Vertical merge
 PLS <- rbind(PLS, PLS2011)
+```
+
+```{r}
 # Vertical merge of PLS and PLS2012----------------------------------------------------------------------------
 # Identify variable differences between dfs
 compare_df_cols(PLS, PLS2012, return = c("mismatch"), bind_method = c("rbind"))
@@ -145,6 +154,9 @@ PLS <- mutate(PLS,
               POSTMS = as.factor(NA))
 # Vertical merge
 PLS <- rbind(PLS, PLS2012)
+```
+
+```{r}
 # Vertical merge of PLS and PLS2013----------------------------------------------------------------------------
 # Identify variable differences between dfs
 compare_df_cols(PLS, PLS2013, return = c("mismatch"), bind_method = c("rbind"))
@@ -159,6 +171,9 @@ PLS <- mutate(PLS,
               ELMATCIR = as.integer(NA))
 # Vertical merge
 PLS <- rbind(PLS, PLS2013)
+```
+
+```{r}
 # Vertical merge of PLS and PLS2014----------------------------------------------------------------------------
 # Identify variable differences between dfs
 compare_df_cols(PLS, PLS2014, return = c("mismatch"), bind_method = c("rbind"))
@@ -171,6 +186,9 @@ PLS2014 <- mutate(PLS2014,
 PLS <- mutate(PLS, WIFISESS = as.integer(NA))
 # Vertical merge
 PLS <- rbind(PLS, PLS2014)
+```
+
+```{r}
 # Vertical merge of PLS and PLS2015----------------------------------------------------------------------------
 # Identify variable differences between dfs
 compare_df_cols(PLS, PLS2015, return = c("mismatch"), bind_method = c("rbind"))
@@ -195,6 +213,9 @@ PLS2015 <- mutate(PLS2015,
                   PHONE = as.factor(PHONE))
 # Vertical merge
 PLS <- rbind(PLS, PLS2015)
+```
+
+```{r}
 # Vertical merge of PLS and PLS2016----------------------------------------------------------------------------
 # Identify variable differences between dfs
 compare_df_cols(PLS, PLS2016, return = c("mismatch"), bind_method = c("rbind"))
@@ -214,11 +235,14 @@ PLS2016 <- mutate(PLS2016,
                   PHONE = as.factor(PHONE))
 # Vertical merge
 PLS <- rbind(PLS, PLS2016)
+```
+
+```{r}
 # Vertical merge of PLS and PLS2017----------------------------------------------------------------------------
 # Identify variable differences between dfs
 compare_df_cols(PLS, PLS2017, return = c("mismatch"), bind_method = c("rbind"))
 # Remove discontinued cols
-PLS <- select(PLS, -ADDRTYPE, -LOCALE, -MSTATUS, -REAPLOCALE, -SCORE)
+PLS <- select(PLS, -ADDRTYPE, -MSTATUS, -REAPLOCALE, -SCORE)
 # Add new cols to PLS
 PLS <- mutate(PLS,
               GEOMATCH = as.factor(NA),
@@ -228,10 +252,114 @@ PLS <- mutate(PLS,
 PLS2017 <- mutate(PLS2017,
                   CDCODE = as.factor(CDCODE),
                   LOCALE_MOD = as.factor(LOCALE_MOD),
-                  PHONE = as.factor(PHONE))
+                  PHONE = as.factor(PHONE),
+                  LOCALE = as.factor(NA))
 # Vertical merge
 PLS <- rbind(PLS, PLS2017)
 ```
+
+## Data Tidying
+```{r}
+# Create Unique Identifier
+PLS <- mutate(PLS, ID = as.character(paste(FSCSKEY, SRVY_YEAR, sep = "-")))
+# Check for duplicate values on unique identifier
+sum(duplicated(PLS$ID))
+# Replace values of -1 with NA (-1: missing)
+PLS[PLS == -1] <- NA
+# Replace values of -3 with NA (-3: closed or temporary closed administrative entity)
+PLS[PLS == -3] <- NA
+# Replace values of -9 with NA (-9: data suppressed to protect confidentiality)
+PLS[PLS == -9] <- NA
+```
+
+```{r}
+# Back fill values for 2008 - 2016 for LOCALE_ADD--------------------------------------------------------------
+# Create new df for back-filling values
+locale_df <- select(PLS, FSCSKEY, SRVY_YEAR, LOCALE_ADD) %>% 
+  mutate(SRVY_YEAR = as.character(SRVY_YEAR),
+         SRVY_YEAR = paste0("Y_", SRVY_YEAR)) %>% #to avoid issues with col names
+  pivot_wider(names_from = SRVY_YEAR, values_from = LOCALE_ADD)
+# Fill values from 2008 - 2016 from 2017 values (based on lat long)
+locale_df <- mutate(locale_df,
+                    Y_2008 = Y_2017,
+                    Y_2009 = Y_2017,
+                    Y_2010 = Y_2017,
+                    Y_2011 = Y_2017,
+                    Y_2012 = Y_2017,
+                    Y_2013 = Y_2017,
+                    Y_2014 = Y_2017,
+                    Y_2015 = Y_2017,
+                    Y_2016 = Y_2017,) %>% 
+  pivot_longer(2:11, names_to = "Year", values_to = "LOCALE_ADD_FULL")
+# Remove "Y_" from prefix of Year values
+locale_df$Year <- str_replace_all(locale_df$Year, "Y_", "")
+# Create unique identifier for merging to PLS and remove unnecessary variables
+locale_df <- mutate(locale_df, ID = paste0(FSCSKEY, "-", Year)) %>% 
+  select(-Year, -FSCSKEY)
+# Left outer join with PLS
+PLS <- left_join(PLS, locale_df, by = "ID")
+# Remove LOCALE_ADD and rename LOCALE_ADD_FULL to LOCALE_ADD
+PLS <- select(PLS, -LOCALE_ADD)
+PLS <- rename(PLS, LOCALE_ADD = LOCALE_ADD_FULL)
+```
+
+Replace factor variable numbers with text:
+```{r}
+# Replace OBEREG number codes with region names----------------------------------------------------------------
+PLS$OBEREG[PLS$OBEREG == 1] <- "New England"
+PLS$OBEREG[PLS$OBEREG == 2] <- "Mid East"
+PLS$OBEREG[PLS$OBEREG == 3] <- "Great Lakes"
+PLS$OBEREG[PLS$OBEREG == 4] <- "Plains"
+PLS$OBEREG[PLS$OBEREG == 5] <- "Southeast"
+PLS$OBEREG[PLS$OBEREG == 6] <- "Southwest"
+PLS$OBEREG[PLS$OBEREG == 7] <- "Rocky Mountains"
+PLS$OBEREG[PLS$OBEREG == 8] <- "Far West"
+PLS$OBEREG[PLS$OBEREG == 9] <- "Outlying Areas"
+# Change variable to factor
+PLS <- mutate(PLS, OBEREG = as.factor(OBEREG))
+# Replace LOCALE_MOD number codes with locale names------------------------------------------------------------
+PLS <- mutate(PLS, LOCALE_NAME = NA)
+PLS$LOCALE_NAME[PLS$LOCALE == 11] <- "City, Large"
+PLS$LOCALE_NAME[PLS$LOCALE == 12] <- "City, Mid-Size"
+PLS$LOCALE_NAME[PLS$LOCALE == 13] <- "City, Small"
+PLS$LOCALE_NAME[PLS$LOCALE == 21] <- "Suburb, Large"
+PLS$LOCALE_NAME[PLS$LOCALE == 22] <- "Suburb, Mid-Size"
+PLS$LOCALE_NAME[PLS$LOCALE == 23] <- "Suburb, Small"
+PLS$LOCALE_NAME[PLS$LOCALE == 31] <- "Town, Fringe"
+PLS$LOCALE_NAME[PLS$LOCALE == 32] <- "Town, Distant"
+PLS$LOCALE_NAME[PLS$LOCALE == 33] <- "Town, Remote"
+PLS$LOCALE_NAME[PLS$LOCALE == 41] <- "Rural, Fringe"
+PLS$LOCALE_NAME[PLS$LOCALE == 42] <- "Rural, Distant"
+PLS$LOCALE_NAME[PLS$LOCALE == 43] <- "Rural, Remote"
+# Convert LOCALE_NAME to factor and remove LOCALE
+PLS <- mutate(PLS, LOCALE_NAME = as.factor(LOCALE_NAME)) %>% 
+  select(-LOCALE)
+# Replace C_LEGBAS number codes with legal basis names----------------------------------------------------------
+PLS <- mutate(PLS, LEGAL_BASIS = NA)
+PLS$LEGAL_BASIS[PLS$C_LEGBAS == 1] <- "City/County"
+PLS$LEGAL_BASIS[PLS$C_LEGBAS == 2] <- "Municipal Government"
+PLS$LEGAL_BASIS[PLS$C_LEGBAS == 3] <- "County/Parish"
+PLS$LEGAL_BASIS[PLS$C_LEGBAS == 4] <- "Library District"
+PLS$LEGAL_BASIS[PLS$C_LEGBAS == 5] <- "Multi-Jurisdictional"
+PLS$LEGAL_BASIS[PLS$C_LEGBAS == 6] <- "Native American Tribal Government"
+PLS$LEGAL_BASIS[PLS$C_LEGBAS == 7] <- "Non-Profit Association or Agency"
+PLS$LEGAL_BASIS[PLS$C_LEGBAS == 8] <- "School District"
+PLS$LEGAL_BASIS[PLS$C_LEGBAS == 9] <- "Other"
+# # Convert LEGAL_BASIS to factor and remove C_LEGBAS
+PLS <- mutate(PLS, LEGAL_BASIS = as.factor(C_LEGBAS)) %>% 
+  select(-C_LEGBAS)
+```
+
+Change names to proper case:
+```{r}
+# Change library name, city, and county to proper case
+PLS <- mutate(PLS, 
+              LIBNAME = str_to_title(LIBNAME),
+              CITY = str_to_title(CITY),
+              CNTY = str_to_title(CNTY),
+              )
+```
+
 
 ## Variable Categories
 
@@ -256,7 +384,7 @@ We are most interested in assessing how different library characteristics (ie: g
 ### Location Characteristics
 
 - `POPU LSA`: Population of the legal service area
-- `C_LEGBAS`: Legal basis code (ie: city/county, municipal govt, etc.)
+- `LEGAL_BASIS`: Legal basis code (ie: city/county, municipal govt, etc.)
   - CC: City/County
   - CI: Municipal Government
   - CO: County/Parish
@@ -266,7 +394,7 @@ We are most interested in assessing how different library characteristics (ie: g
   - NP: Non-Profit Association or Agency
   - SD: School District
   - OT: Other
-- `LOCALE_MOD`: Urban-centric locale code based on the modal locale of central and branch libraries
+- `LOCALE_NAME`: Urban-centric locale code based on latitude and longitude of administrative entity*
   - 11: City, Large
   - 12: City, Mid-Size
   - 13: City, Small
@@ -279,6 +407,8 @@ We are most interested in assessing how different library characteristics (ie: g
   - 41: Rural, Fringe
   - 42: Rural, Distant
   - 43: Rural, Remote
+  
+*Variable was added in 2017; since this is based off of lat long coordinates, I back-filled the values for this variable for prior years based off of 2017 values
 
 ### Geography
 
@@ -364,105 +494,43 @@ We are most interested in assessing how different library characteristics (ie: g
 - `PITUSR`: Users of public internet computers per year
 - `WIFISESS`: Total annual wireless sessions provided by the library
 
-## Data Tidying
-```{r}
-# Create Unique Identifier
-PLS <- mutate(PLS, ID = as.character(paste(FSCSKEY, SRVY_YEAR, sep = "-")))
-# Check for duplicate values on unique identifier
-sum(duplicated(PLS$ID))
-# Replace values of -1 with NA (-1: missing)
-PLS[PLS == -1] <- NA
-# Replace values of -3 with NA (-3: closed or temporary closed administrative entity)
-PLS[PLS == -3] <- NA
-# Replace values of -9 with NA (-9: data suppressed to protect confidentiality)
-PLS[PLS == -9] <- NA
-```
-
-Replace factor variable numbers with text:
-```{r}
-# Replace OBEREG number codes with region names
-PLS <- mutate(PLS, OBEREG = as.factor(ifelse(1, "New England",
-                                           ifelse(2, "Mid East",
-                                                  ifelse(3, "Great Lakes",
-                                                         ifelse(4, "Plains",
-                                                                ifelse(5, "Southeast",
-                                                                       ifelse(6, "Southwest",
-                                                                              ifelse(7,"Rocky Mountains",
-                                                                                     ifelse(8, "Far West", "Outlying Areas")
-                                                                                     )
-                                                                              )
-                                                                       )
-                                                                )
-                                                         )
-                                                  )
-                                           )
-                                      )
-              )
-# Replace LOCALE_MOD number codes with locale names
-PLS <- mutate(PLS, LOCALE_MOD = as.factor(ifelse(11, "City, Large",
-                                                 ifelse(12, "City, Mid-Size",
-                                                        ifelse(13, "City, Small",
-                                                               ifelse(21, "Suburb, Large",
-                                                                      ifelse(22, "Suburb, Mid_Size",
-                                                                             ifelse(23, "Suburb, Small",
-                                                                                    ifelse(31, "Town, Fringe",
-                                                                                           ifelse(32, "Town, Distant",
-                                                                                                  ifelse(33, "Town, Remote",
-                                                                                                         ifelse(41, "Rural, Fringe",
-                                                                                                                ifelse(42, "Rural, Distant", "Rural, Remote")
-                                                                                                                )
-                                                                                                         )
-                                                                                                  )
-                                                                                           )
-                                                                                    )
-                                                                             )
-                                                                      )
-                                                               )
-                                                        )
-                                                 )
-                                          )
-              )
-# Replace C_LEGBAS number codes with legal basis names
-# PLS <- mutate(PLS, C_LEGBAS = as.factor(ifelse(1, "City/County",
-#                                                ifelse(2, "Municipal Government",
-#                                                       ifelse(3, "County/Parish",
-#                                                              ifelse(4, "Library District",
-#                                                                     ifelse(5, "Multi-Jurisdictional",
-#                                                                            ifelse(6, "Native American Tribal Government",
-#                                                                                   ifelse(7, "Non-Profit Association or Agency",
-#                                                                                          ifelse(8, "School District", "Other")
-#                                                                                          )
-#                                                                                   )
-#                                                                            )
-#                                                                     )
-#                                                              )
-#                                                       )
-#                                                )
-#                                         )
-#               )
-
-```
 
 Select Variables:
 ```{r}
 # Select variables for final analysis
-PLS_TOT <- select(PLS, ID, SRVY_YEAR, FSCSKEY, LIBNAME, CITY, STABR, ZIP, CNTY, OBEREG, C_LEGBAS, LOCALE_MOD, CENTLIB, BRANLIB, BKMOB, LIBRARIA, LOCGVT, STGVT, FEDGVT, OTHINCM, STAFFEXP, PRMATEXP, ELMATEXP, OTHMATEX, TOTEXPCO, OTHOPEXP, TOTOPEXP, BKVOL, EBOOK, AUDIO_PH, AUDIO_DL, VIDEO_PH, VIDEO_DL, ELECCOLL, VISITS, REGBOR, TOTCIR, KIDCIRCL, ELMATCIR, PHYSCIR, LOANTO, LOANFM, TOTPRO, KIDPRO, YAPRO, TOTATTEN, KIDATTEN, YAATTEN, GPTERMS, PITUSR, WIFISESS, LONGITUD, LATITUDE)
+PLS_FINAL <- select(PLS, ID, SRVY_YEAR, FSCSKEY, LIBNAME, ADDRESS, CITY, STABR, ZIP, CNTY, OBEREG, LEGAL_BASIS, LOCALE_NAME, CENTLIB, BRANLIB, BKMOB, LIBRARIA, LOCGVT, STGVT, FEDGVT, OTHINCM, STAFFEXP, PRMATEXP, ELMATEXP, OTHMATEX, TOTEXPCO, OTHOPEXP, TOTOPEXP, BKVOL, EBOOK, AUDIO_PH, AUDIO_DL, VIDEO_PH, VIDEO_DL, ELECCOLL, VISITS, REGBOR, TOTCIR, KIDCIRCL, ELMATCIR, PHYSCIR, LOANTO, LOANFM, TOTPRO, KIDPRO, YAPRO, TOTATTEN, KIDATTEN, YAATTEN, GPTERMS, PITUSR, WIFISESS, LONGITUD, LATITUDE)
 ```
 
 Examine Data Structure:
 ```{r}
 # Examine data structure of PLS
-str(PLS_TOT)
+str(PLS_FINAL)
 ```
 
 Additional tidying notes:
-- Use proper case on library name (for interactive dashboard searching)
-- Replace integer values for `OBEREG` with string values using following key:
+- For new variables, change NA's to 0 where applicable
 - Add variable for total locations: `CENTLIB` + `BRANLIB` + `BKMOB`
 - Add variables showing the proportion of each operating revenue type
 - Add variables showing the proportion of each collection expenditure type
-- Add proportion of `KIDATTEN`
 - Create revenue and/or expenditure categories for easier groupings
+
+Add new variables:
+```{r}
+# Add new variables to df-----------------------------------------------------------------------------
+# PLS_TOT <- mutate(PLS_TOT,
+#                   TOTLOC = CENTLIB + BRANLIB + BKMOB,
+#                   P_CENTLIB = CENTLIB / TOTLOC,
+#                   P_BRANLIB = BRANLIB / TOTLOC,
+#                   P_BKMOB = BKMOB / TOTLOC,
+#                   P_PRMATEXP = PRMATEXP / TOTEXPCO,
+#                   P_ELMATEXP = ELMATEXP / TOTEXPCO,
+#                   P_OTHMATEX = OTHMATEX / TOTEXPCO,
+#                   P_STAFFEXP = STAFFEXP / TOTOPEXP,
+#                   P_TOTEXPCO = TOTEXPCO / TOTOPEXP,
+#                   P_OTHOPEXP = OTHOPEXP / TOTOPEXP
+#                   )
+```
+
 
 ## First 10 Rows
 
@@ -484,5 +552,6 @@ Additional tidying notes:
 
 ```{r}
 # Save PLS and PLS_final to csv for use in Tableau and other dashboard creation software
+write.csv(PLS_FINAL, file = "Public_Library_Survey_08_to_17.csv")
 ```
 
