@@ -1,2 +1,2 @@
 # US-Public-Libraries
-US public library survey data collected by the Institute of Museum and Library Services
+A project looking at US public library usage trends using survey data collected by the Institute of Museum and Library Services from 2008 - 2017.
