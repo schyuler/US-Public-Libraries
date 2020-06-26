@@ -7,15 +7,27 @@ output: html_document
 
 # Project Overview
 
-## Project Description
+U.S. Public libraries are a crucial resource for many communities, providing access to information, services, technology, materials, programming, space for community events. Libraries serve multi-faceted roles in supporting their communities, and examining library usage reveals how different communities access (or are not accessing) this public resource. Additionally, with the growing use of new technologies and shifting public needs, libraries are faced with a changing landscape of modern library usage. Analyzing library usage and usage trends over time can indicate where these changes are most pronounced and potentially how libraries can best respond to these changees in alignment with their particular community needs.
+
+
+This project will examine and produce the following:
+
+- A decade of usage trends for U.S. Public libraries from 2008 - 2017
+- Library usage benchmarking analysis for 2017
 
 ## Description of Data
 
-### Caveats
-
-- Some libraries have data points suppressed to protect confidentiality, so it will be incomplete
+For this project, I will use the Public Libraries Survey from the Institute of Museum and Library Services, for the survey years 2008 - 2017. This survey data is administered to public libraries across the United States, the District of Columbia, and U.S. territories. 
 
 Data Source: https://www.imls.gov/research-evaluation/data-collection/public-libraries-survey
+
+### Caveats
+
+A few important caveats to note:
+
+- Data points for some libraries are suppressed to protect confidentiality (ie: salary information for libraries with small staff numbers), resulting in incomplete information for some variables
+- Not all libraries reported answers for every question.
+- Library usage variables are highly correlated with one another, which makes it difficult to estimate the impact/effect associated with specific variables
 
 # Data Tidying
 
@@ -560,7 +572,6 @@ PLS_TABLEAU <- merge(current_libnames, PLS_FINAL, by = c("FSCSKEY"), all.x = TRU
 PLS_TABLEAU <- mutate(PLS_TABLEAU, LIBNAME.y = str_to_title(LIBNAME.y))
 ```
 
-
 ## First 10 Rows
 
 # Univariate Non-Graphical Analysis
@@ -578,6 +589,8 @@ PLS_TABLEAU <- mutate(PLS_TABLEAU, LIBNAME.y = str_to_title(LIBNAME.y))
 # Regression Analysis
 
 # Findings
+
+# CSV for Dashboard Creation
 
 ```{r}
 # Save PLS and PLS_final to csv for use in Tableau and other dashboard creation software
