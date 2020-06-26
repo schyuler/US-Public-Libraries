@@ -9,12 +9,6 @@ output: html_document
 
 ## Project Description
 
-**Expectations**
-I expect the following:
-- Libraries in rural areas will have larger electronic collections
-- Electronic collections to increase over the 10-year period
-- Libraries in rural areas will have lower physical circulation but higher electronic circulation
-
 ## Description of Data
 
 ### Caveats
@@ -319,21 +313,32 @@ PLS$OBEREG[PLS$OBEREG == 9] <- "Outlying Areas"
 PLS <- mutate(PLS, OBEREG = as.factor(OBEREG))
 # Replace LOCALE_MOD number codes with locale names------------------------------------------------------------
 PLS <- mutate(PLS, LOCALE_NAME = NA)
-PLS$LOCALE_NAME[PLS$LOCALE == 11] <- "City, Large"
-PLS$LOCALE_NAME[PLS$LOCALE == 12] <- "City, Mid-Size"
-PLS$LOCALE_NAME[PLS$LOCALE == 13] <- "City, Small"
-PLS$LOCALE_NAME[PLS$LOCALE == 21] <- "Suburb, Large"
-PLS$LOCALE_NAME[PLS$LOCALE == 22] <- "Suburb, Mid-Size"
-PLS$LOCALE_NAME[PLS$LOCALE == 23] <- "Suburb, Small"
-PLS$LOCALE_NAME[PLS$LOCALE == 31] <- "Town, Fringe"
-PLS$LOCALE_NAME[PLS$LOCALE == 32] <- "Town, Distant"
-PLS$LOCALE_NAME[PLS$LOCALE == 33] <- "Town, Remote"
-PLS$LOCALE_NAME[PLS$LOCALE == 41] <- "Rural, Fringe"
-PLS$LOCALE_NAME[PLS$LOCALE == 42] <- "Rural, Distant"
-PLS$LOCALE_NAME[PLS$LOCALE == 43] <- "Rural, Remote"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 11] <- "City, Large"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 12] <- "City, Mid-Size"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 13] <- "City, Small"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 21] <- "Suburb, Large"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 22] <- "Suburb, Mid-Size"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 23] <- "Suburb, Small"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 31] <- "Town, Fringe"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 32] <- "Town, Distant"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 33] <- "Town, Remote"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 41] <- "Rural, Fringe"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 42] <- "Rural, Distant"
+PLS$LOCALE_NAME[PLS$LOCALE_ADD == 43] <- "Rural, Remote"
+# Create variable LOCALE_CSTR for high-level groupings
+PLS <- mutate(PLS, LOCALE_CSTR = if_else(startsWith(LOCALE_NAME, "City"), "City",
+                                         ifelse(startsWith(LOCALE_NAME, "Suburb"), "Suburb",
+                                                ifelse(startsWith(LOCALE_NAME, "Town"), "Town",
+                                                       ifelse(startsWith(LOCALE_NAME, "Rural"),"Rural", NA)
+                                                       )
+                                                )
+                                         )
+              )
 # Convert LOCALE_NAME to factor and remove LOCALE
-PLS <- mutate(PLS, LOCALE_NAME = as.factor(LOCALE_NAME)) %>% 
-  select(-LOCALE)
+PLS <- mutate(PLS, 
+              LOCALE_NAME = as.factor(LOCALE_NAME),
+              LOCALE_CSTR = as.factor(LOCALE_CSTR)) %>% 
+  select(-LOCALE_ADD)
 # Replace C_LEGBAS number codes with legal basis names----------------------------------------------------------
 PLS <- mutate(PLS, LEGAL_BASIS = NA)
 PLS$LEGAL_BASIS[PLS$C_LEGBAS == 1] <- "City/County"
@@ -476,6 +481,7 @@ We are most interested in assessing how different library characteristics (ie: g
 - `KIDCIRCL`: Total annual circulation of all children's materials
 - `ELMATCIR`: Eletronic material circulation
 - `PHYSCIR`: Total annual physical material circulation
+- `TOTCOLL`: Total annual count of physical item circulation, circulation of electronic material and successful retrieval of electronic information
 
 ### Inter-Library Loans
 - `LOANTO`: Total annual loans provided to other libraries
@@ -498,7 +504,7 @@ We are most interested in assessing how different library characteristics (ie: g
 Select Variables:
 ```{r}
 # Select variables for final analysis
-PLS_FINAL <- select(PLS, ID, SRVY_YEAR, FSCSKEY, LIBNAME, ADDRESS, CITY, STABR, ZIP, CNTY, OBEREG, LEGAL_BASIS, LOCALE_NAME, CENTLIB, BRANLIB, BKMOB, LIBRARIA, LOCGVT, STGVT, FEDGVT, OTHINCM, STAFFEXP, PRMATEXP, ELMATEXP, OTHMATEX, TOTEXPCO, OTHOPEXP, TOTOPEXP, BKVOL, EBOOK, AUDIO_PH, AUDIO_DL, VIDEO_PH, VIDEO_DL, ELECCOLL, VISITS, REGBOR, TOTCIR, KIDCIRCL, ELMATCIR, PHYSCIR, LOANTO, LOANFM, TOTPRO, KIDPRO, YAPRO, TOTATTEN, KIDATTEN, YAATTEN, GPTERMS, PITUSR, WIFISESS, LONGITUD, LATITUDE)
+PLS_FINAL <- select(PLS, ID, SRVY_YEAR, FSCSKEY, LIBNAME, ADDRESS, CITY, STABR, ZIP, CNTY, OBEREG, POPU_LSA, LEGAL_BASIS, LOCALE_CSTR, LOCALE_NAME, CENTLIB, BRANLIB, BKMOB, LIBRARIA, LOCGVT, STGVT, FEDGVT, OTHINCM, STAFFEXP, PRMATEXP, ELMATEXP, OTHMATEX, TOTEXPCO, OTHOPEXP, TOTOPEXP, BKVOL, EBOOK, AUDIO_PH, AUDIO_DL, VIDEO_PH, VIDEO_DL, ELECCOLL, VISITS, REGBOR, TOTCIR, KIDCIRCL, ELMATCIR, PHYSCIR, TOTCOLL, LOANTO, LOANFM, TOTPRO, KIDPRO, YAPRO, TOTATTEN, KIDATTEN, YAATTEN, GPTERMS, PITUSR, WIFISESS, LONGITUD, LATITUDE)
 ```
 
 Examine Data Structure:
@@ -512,11 +518,19 @@ Additional tidying notes:
 - Add variable for total locations: `CENTLIB` + `BRANLIB` + `BKMOB`
 - Add variables showing the proportion of each operating revenue type
 - Add variables showing the proportion of each collection expenditure type
-- Create revenue and/or expenditure categories for easier groupings
+- Create revenue and/or expenditure categories to group by expenditure level (ie: small, medium, large)
 
 Add new variables:
 ```{r}
-# Add new variables to df-----------------------------------------------------------------------------
+# Add Ebook proportion variable-----------------------------------------------------------------------------
+PLS_FINAL <- mutate(PLS_FINAL,
+                    TOT_BOOK = EBOOK + BKVOL,
+                    EBOOK_PROP = EBOOK / TOT_BOOK,
+                    PHBOOK_PROP = BKVOL / TOT_BOOK)
+# Add per capita variables----------------------------------------------------------------------------------
+PLS_FINAL <- mutate(PLS_FINAL,
+                    PC_TOTCOLL = TOTCOLL / POPU_LSA,
+                    )
 # PLS_TOT <- mutate(PLS_TOT,
 #                   TOTLOC = CENTLIB + BRANLIB + BKMOB,
 #                   P_CENTLIB = CENTLIB / TOTLOC,
@@ -529,6 +543,21 @@ Add new variables:
 #                   P_TOTEXPCO = TOTEXPCO / TOTOPEXP,
 #                   P_OTHOPEXP = OTHOPEXP / TOTOPEXP
 #                   )
+```
+
+Make library names consistent:
+Library names are inconsistent across survey years. Populate the `LIBNAME` field with the name from the 2017 survey year for all survey years.
+
+```{r}
+# Make library names consistent with most recent survey year libname
+# Create new df that only includes FSCSCKEY and LIBNAME for the 2017 survey year
+current_libnames <- select(PLS2017, FSCSKEY, LIBNAME)
+# Change LIBNAME to proper case
+current_libnames <- mutate(current_libnames, LIBNAME = str_to_title(LIBNAME))
+# Replace LIBNAME with names in current_libnames
+PLS_TABLEAU <- merge(current_libnames, PLS_FINAL, by = c("FSCSKEY"), all.x = TRUE)
+# Change LIBNAME.y to proper case
+PLS_TABLEAU <- mutate(PLS_TABLEAU, LIBNAME.y = str_to_title(LIBNAME.y))
 ```
 
 
@@ -552,6 +581,6 @@ Add new variables:
 
 ```{r}
 # Save PLS and PLS_final to csv for use in Tableau and other dashboard creation software
-write.csv(PLS_FINAL, file = "Public_Library_Survey_08_to_17.csv")
+write.csv(PLS_TABLEAU, file = "Public_Library_Survey_08_to_17.csv")
 ```
 
